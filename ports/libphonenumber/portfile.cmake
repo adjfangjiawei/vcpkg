@@ -16,11 +16,11 @@ vcpkg_from_github(
 vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}/cpp"
     OPTIONS
-        -DREGENERATE_METADATA=OFF
+        -DREGENERATE_METADATA=ON
         -DUSE_RE2=ON
-        -DBUILD_GEOCODER=OFF
+        -DBUILD_GEOCODER=ON
         -DUSE_PROTOBUF_LITE=ON
-        -DBUILD_SHARED_LIBS=OFF
+        -DBUILD_SHARED_LIBS=ON
         -DBUILD_TESTING=OFF)
 
 vcpkg_cmake_install()
