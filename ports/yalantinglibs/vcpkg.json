@@ -1,6 +1,6 @@
 {
 	"name": "yalantinglibs",
-	"version-string": "0.3.0",
+	"version-string": "0.3.2",
 	"port-version": 3,
 	"homepage": "https://github.com/alibaba/yalantinglibs",
 	"description": "A collection of C++20 libraries, include async_simple, coro_rpc and struct_pack.",

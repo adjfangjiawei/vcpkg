@@ -4,8 +4,8 @@ include(vcpkg_common_functions)
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO alibaba/yalantinglibs
-    REF v0.3.0
-    SHA512 43a9ead56b9b3117888c17b3c753554f6ebfdede6ddaff651ca0f674d9322b37b9168305b78c2c5fd5c8907dc4f89f36d1c38261dfe505831b04bde2ce28f5b1
+    REF v0.3.2
+    SHA512 05515e4ad167051a4ac794a95b71a0a603aeddf649f25b63acc57887ee3d71db1dc2ce7eb79a74b2d57a03cab15cf4e60bcb3f608bc4edeae6768ab7fd4b7e4e
     HEAD_REF master
 )
 
