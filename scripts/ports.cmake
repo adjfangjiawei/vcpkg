@@ -4,22 +4,28 @@ cmake_minimum_required(VERSION 3.21)
 foreach(i RANGE 0 "${CMAKE_ARGC}")
     unset(CMAKE_ARGV${i})
 endforeach()
+
 unset(CMAKE_ARGN)
 unset(CMAKE_ARGC)
 unset(i)
+
 # These don't make sense in script context
 unset(CMAKE_BINARY_DIR)
 unset(CMAKE_SOURCE_DIR)
 unset(CMAKE_CURRENT_BINARY_DIR)
 unset(CMAKE_CURRENT_SOURCE_DIR)
 unset(CMAKE_FILES_DIRECTORY)
+
 # Minimum CMake version is forced within vcpkg
 unset(CMAKE_MINIMUM_REQUIRED_VERSION)
+
 # CMAKE_VERSION is enough for doing version checks
 unset(CMAKE_MAJOR_VERSION)
 unset(CMAKE_MINOR_VERSION)
 unset(CMAKE_PATCH_VERSION)
 unset(CMAKE_TWEAK_VERSION)
+
+set(CMAKE_EXTRA_ARGS "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON")
 
 set(SCRIPTS "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "Location to stored scripts")
 list(APPEND CMAKE_MODULE_PATH "${SCRIPTS}/cmake")
@@ -99,6 +105,7 @@ function(debug_message)
         message(STATUS "[DEBUG] " "${ARG_STRING}")
     endif()
 endfunction()
+
 function(z_vcpkg_deprecation_message)
     z_vcpkg_function_arguments(ARGS)
     list(JOIN ARGS " " ARG_STRING)
@@ -106,7 +113,8 @@ function(z_vcpkg_deprecation_message)
 endfunction()
 
 option(_VCPKG_PROHIBIT_BACKCOMPAT_FEATURES "Controls whether use of a backcompat only support feature fails the build.")
-if (_VCPKG_PROHIBIT_BACKCOMPAT_FEATURES)
+
+if(_VCPKG_PROHIBIT_BACKCOMPAT_FEATURES)
     set(Z_VCPKG_BACKCOMPAT_MESSAGE_LEVEL "FATAL_ERROR")
 else()
     set(Z_VCPKG_BACKCOMPAT_MESSAGE_LEVEL "WARNING")
@@ -126,6 +134,7 @@ endif()
 
 if(CMD STREQUAL "BUILD")
     set(CMAKE_TRIPLET_FILE "${TARGET_TRIPLET_FILE}")
+
     if(NOT EXISTS "${CMAKE_TRIPLET_FILE}")
         message(FATAL_ERROR "Unsupported target triplet. Triplet file does not exist: ${CMAKE_TRIPLET_FILE}")
     endif()
@@ -133,13 +142,17 @@ if(CMD STREQUAL "BUILD")
     if(NOT DEFINED CURRENT_PORT_DIR)
         message(FATAL_ERROR "CURRENT_PORT_DIR was not defined")
     endif()
+
     file(TO_CMAKE_PATH "${CURRENT_PORT_DIR}" CURRENT_PORT_DIR)
+
     if(NOT EXISTS "${CURRENT_PORT_DIR}")
         message(FATAL_ERROR "Cannot find port: ${PORT}\n  Directory does not exist: ${CURRENT_PORT_DIR}")
     endif()
+
     if(NOT EXISTS "${CURRENT_PORT_DIR}/portfile.cmake")
         message(FATAL_ERROR "Port is missing portfile: ${CURRENT_PORT_DIR}/portfile.cmake")
     endif()
+
     if(NOT EXISTS "${CURRENT_PORT_DIR}/CONTROL" AND NOT EXISTS "${CURRENT_PORT_DIR}/vcpkg.json")
         message(FATAL_ERROR "Port is missing control or manifest file: ${CURRENT_PORT_DIR}/{CONTROL,vcpkg.json}")
     endif()
@@ -149,10 +162,12 @@ if(CMD STREQUAL "BUILD")
 
     if(EXISTS "${CURRENT_PACKAGES_DIR}")
         file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}")
+
         if(EXISTS "${CURRENT_PACKAGES_DIR}")
             message(FATAL_ERROR "Unable to remove directory: ${CURRENT_PACKAGES_DIR}\n  Files are likely in use.")
         endif()
     endif()
+
     file(MAKE_DIRECTORY "${CURRENT_BUILDTREES_DIR}" "${CURRENT_PACKAGES_DIR}")
 
     include("${CMAKE_TRIPLET_FILE}")
@@ -175,11 +190,14 @@ target system or to the host system. Use a prefixed variable instead.
   VCPKG_DETECTED_<VARIABLE> (using vcpkg_cmake_get_vars)
 ")
     endfunction()
+
     foreach(var IN ITEMS ANDROID APPLE BSD IOS LINUX MINGW MSVC UNIX WIN32)
         variable_watch("${var}" z_vcpkg_warn_ambiguous_system_variables)
     endforeach()
 
-    if (DEFINED VCPKG_PORT_CONFIGS)
+    message(STATUS "VCPKG_PORT_CONFIGS:${VCPKG_PORT_CONFIGS}")
+
+    if(DEFINED VCPKG_PORT_CONFIGS)
         foreach(VCPKG_PORT_CONFIG IN LISTS VCPKG_PORT_CONFIGS)
             include("${VCPKG_PORT_CONFIG}")
         endforeach()
@@ -188,18 +206,22 @@ target system or to the host system. Use a prefixed variable instead.
     set(Z_VCPKG_ERROR_LOG_COLLECTION_FILE "${CURRENT_BUILDTREES_DIR}/error-logs-${TARGET_TRIPLET}.txt")
     file(REMOVE "${Z_VCPKG_ERROR_LOG_COLLECTION_FILE}")
 
+    message(STATUS "CURRENT_PORT_DIR:${CURRENT_PORT_DIR}")
     include("${CURRENT_PORT_DIR}/portfile.cmake")
+
     if(DEFINED PORT)
         # Always fixup RPATH on linux unless explicitly disabled.
-        if(VCPKG_FIXUP_ELF_RPATH OR (VCPKG_TARGET_IS_LINUX AND NOT DEFINED VCPKG_FIXUP_ELF_RPATH))
+        if(VCPKG_FIXUP_ELF_RPATH OR(VCPKG_TARGET_IS_LINUX AND NOT DEFINED VCPKG_FIXUP_ELF_RPATH))
             z_vcpkg_fixup_rpath_in_dir()
         endif()
+
         include("${SCRIPTS}/build_info.cmake")
     endif()
 elseif(CMD STREQUAL "CREATE")
     if(NOT DEFINED PORT_PATH)
         set(PORT_PATH "${VCPKG_ROOT_DIR}/ports/${PORT}")
     endif()
+
     file(TO_NATIVE_PATH "${PORT_PATH}" NATIVE_PORT_PATH)
     set(PORTFILE_PATH "${PORT_PATH}/portfile.cmake")
     file(TO_NATIVE_PATH "${PORTFILE_PATH}" NATIVE_PORTFILE_PATH)
@@ -209,9 +231,11 @@ elseif(CMD STREQUAL "CREATE")
     if(EXISTS "${PORTFILE_PATH}")
         message(FATAL_ERROR "Portfile already exists: '${NATIVE_PORTFILE_PATH}'")
     endif()
+
     if(NOT FILENAME)
         get_filename_component(FILENAME "${URL}" NAME)
     endif()
+
     string(REGEX REPLACE "(\\.(zip|gz|tar|tgz|bz2))+\$" "" ROOT_NAME "${FILENAME}")
 
     set(DOWNLOAD_PATH "${DOWNLOADS}/${FILENAME}")
@@ -224,10 +248,12 @@ elseif(CMD STREQUAL "CREATE")
         message(STATUS "Downloading ${URL} -> ${FILENAME}...")
         file(DOWNLOAD "${URL}" "${DOWNLOAD_PATH}" STATUS download_status)
         list(GET download_status 0 status_code)
+
         if(NOT "${download_status}" EQUAL "0")
             message(FATAL_ERROR "Downloading ${URL}... Failed. Status: ${download_status}")
         endif()
     endif()
+
     file(SHA512 "${DOWNLOAD_PATH}" SHA512)
 
     file(MAKE_DIRECTORY "${PORT_PATH}")

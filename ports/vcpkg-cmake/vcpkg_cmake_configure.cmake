@@ -18,6 +18,7 @@ function(vcpkg_cmake_configure)
     if(NOT arg_Z_CMAKE_GET_VARS_USAGE AND DEFINED CACHE{Z_VCPKG_CMAKE_GENERATOR})
         message(WARNING "${CMAKE_CURRENT_FUNCTION} already called; this function should only be called once.")
     endif()
+
     if(arg_PREFER_NINJA)
         message(WARNING "PREFER_NINJA has been deprecated in ${CMAKE_CURRENT_FUNCTION}. Please remove it from the portfile!")
     endif()
@@ -29,12 +30,16 @@ function(vcpkg_cmake_configure)
     if(NOT DEFINED arg_SOURCE_PATH)
         message(FATAL_ERROR "SOURCE_PATH must be set")
     endif()
+
+    message(STATUS "arg_SOURCE_PATH:${arg_SOURCE_PATH}")
+
     if(NOT DEFINED arg_LOGFILE_BASE)
         set(arg_LOGFILE_BASE "config-${TARGET_TRIPLET}")
     endif()
 
     set(invalid_maybe_unused_vars "${arg_MAYBE_UNUSED_VARIABLES}")
     list(FILTER invalid_maybe_unused_vars INCLUDE REGEX "^-D")
+
     if(NOT invalid_maybe_unused_vars STREQUAL "")
         list(JOIN invalid_maybe_unused_vars " " bad_items)
         message(${Z_VCPKG_BACKCOMPAT_MESSAGE_LEVEL}
@@ -54,10 +59,13 @@ function(vcpkg_cmake_configure)
                 vcpkg_list(APPEND manually_specified_variables "${CMAKE_MATCH_1}")
             endif()
         endforeach()
+
         vcpkg_list(REMOVE_DUPLICATES manually_specified_variables)
+
         foreach(maybe_unused_var IN LISTS arg_MAYBE_UNUSED_VARIABLES)
             vcpkg_list(REMOVE_ITEM manually_specified_variables "${maybe_unused_var}")
         endforeach()
+
         debug_message("manually specified variables: ${manually_specified_variables}")
     endif()
 
@@ -70,9 +78,11 @@ function(vcpkg_cmake_configure)
     endif()
 
     set(ninja_host ON) # Ninja availability
+
     if(host_architecture STREQUAL "x86" OR DEFINED ENV{VCPKG_FORCE_SYSTEM_BINARIES})
         # Prebuilt ninja binaries are only provided for x64 hosts
         find_program(NINJA NAMES ninja ninja-build)
+
         if(NOT NINJA)
             set(ninja_host OFF)
             set(arg_DISABLE_PARALLEL_CONFIGURE ON)
@@ -82,12 +92,15 @@ function(vcpkg_cmake_configure)
 
     set(generator "")
     set(architecture_options "")
+
     if(arg_WINDOWS_USE_MSBUILD AND VCPKG_HOST_IS_WINDOWS AND VCPKG_TARGET_IS_WINDOWS AND NOT VCPKG_TARGET_IS_MINGW)
         z_vcpkg_get_visual_studio_generator(OUT_GENERATOR generator OUT_ARCH arch)
         vcpkg_list(APPEND architecture_options "-A${arch}")
+
         if(DEFINED VCPKG_PLATFORM_TOOLSET)
             vcpkg_list(APPEND arg_OPTIONS "-T${VCPKG_PLATFORM_TOOLSET}")
         endif()
+
         if(NOT generator)
             message(FATAL_ERROR "Unable to determine appropriate Visual Studio generator for triplet ${TARGET_TRIPLET}:
     ENV{VisualStudioVersion} : $ENV{VisualStudioVersion}
@@ -105,6 +118,7 @@ function(vcpkg_cmake_configure)
         if(NOT VCPKG_CMAKE_SYSTEM_NAME)
             set(VCPKG_CMAKE_SYSTEM_NAME "Windows")
         endif()
+
         message(FATAL_ERROR "Unable to determine appropriate generator for: "
             "${VCPKG_CMAKE_SYSTEM_NAME}-${VCPKG_TARGET_ARCHITECTURE}-${VCPKG_PLATFORM_TOOLSET}")
     endif()
@@ -115,6 +129,7 @@ function(vcpkg_cmake_configure)
     if(generator STREQUAL "Ninja")
         vcpkg_find_acquire_program(NINJA)
         vcpkg_list(APPEND arg_OPTIONS "-DCMAKE_MAKE_PROGRAM=${NINJA}")
+
         # If we use Ninja, it must be on PATH for CMake's ExternalProject,
         # cf. https://gitlab.kitware.com/cmake/cmake/-/issues/23355.
         get_filename_component(ninja_path "${NINJA}" DIRECTORY)
@@ -132,12 +147,14 @@ function(vcpkg_cmake_configure)
         "${build_dir_release}"
         "${build_dir_debug}")
     file(MAKE_DIRECTORY "${build_dir_release}")
+
     if(NOT DEFINED VCPKG_BUILD_TYPE OR VCPKG_BUILD_TYPE STREQUAL "debug")
         file(MAKE_DIRECTORY "${build_dir_debug}")
     endif()
 
     if(DEFINED VCPKG_CMAKE_SYSTEM_NAME)
         vcpkg_list(APPEND arg_OPTIONS "-DCMAKE_SYSTEM_NAME=${VCPKG_CMAKE_SYSTEM_NAME}")
+
         if(VCPKG_TARGET_IS_UWP AND NOT DEFINED VCPKG_CMAKE_SYSTEM_VERSION)
             set(VCPKG_CMAKE_SYSTEM_VERSION 10.0)
         elseif(VCPKG_TARGET_IS_ANDROID AND NOT DEFINED VCPKG_CMAKE_SYSTEM_VERSION)
@@ -168,6 +185,7 @@ function(vcpkg_cmake_configure)
     z_vcpkg_cmake_configure_both_set_or_unset(VCPKG_CXX_FLAGS VCPKG_C_FLAGS)
 
     set(VCPKG_SET_CHARSET_FLAG ON)
+
     if(arg_NO_CHARSET_FLAG)
         set(VCPKG_SET_CHARSET_FLAG OFF)
     endif()
@@ -175,6 +193,8 @@ function(vcpkg_cmake_configure)
     if(NOT DEFINED VCPKG_CHAINLOAD_TOOLCHAIN_FILE)
         z_vcpkg_select_default_vcpkg_chainload_toolchain()
     endif()
+
+    set(VCPKG_CXX_FLAGS "${VCPKG_CXX_FLAGS} -stdlib=libc++")
 
     list(JOIN VCPKG_TARGET_ARCHITECTURE "\;" target_architecture_string)
     vcpkg_list(APPEND arg_OPTIONS
@@ -206,6 +226,9 @@ function(vcpkg_cmake_configure)
         "-D_VCPKG_ROOT_DIR=${VCPKG_ROOT_DIR}"
         "-D_VCPKG_INSTALLED_DIR=${_VCPKG_INSTALLED_DIR}"
         "-DVCPKG_MANIFEST_INSTALL=OFF"
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+        "-DCMAKE_CXX_COMPILER=clang++-20"
+        "-DCMAKE_C_COMPILER=clang-20"
     )
 
     # Sets configuration variables for macOS builds
@@ -221,22 +244,24 @@ function(vcpkg_cmake_configure)
     if(DEFINED VCPKG_CMAKE_CONFIGURE_OPTIONS)
         vcpkg_list(APPEND arg_OPTIONS ${VCPKG_CMAKE_CONFIGURE_OPTIONS})
     endif()
+
     if(DEFINED VCPKG_CMAKE_CONFIGURE_OPTIONS_RELEASE)
         vcpkg_list(APPEND arg_OPTIONS_RELEASE ${VCPKG_CMAKE_CONFIGURE_OPTIONS_RELEASE})
     endif()
+
     if(DEFINED VCPKG_CMAKE_CONFIGURE_OPTIONS_DEBUG)
         vcpkg_list(APPEND arg_OPTIONS_DEBUG ${VCPKG_CMAKE_CONFIGURE_OPTIONS_DEBUG})
     endif()
 
     vcpkg_list(SET rel_command
-        "${CMAKE_COMMAND}" "${arg_SOURCE_PATH}" 
+        "${CMAKE_COMMAND}" "${arg_SOURCE_PATH}"
         -G "${generator}"
         ${architecture_options}
         "-DCMAKE_BUILD_TYPE=Release"
         "-DCMAKE_INSTALL_PREFIX=${CURRENT_PACKAGES_DIR}"
         ${arg_OPTIONS} ${arg_OPTIONS_RELEASE})
     vcpkg_list(SET dbg_command
-        "${CMAKE_COMMAND}" "${arg_SOURCE_PATH}" 
+        "${CMAKE_COMMAND}" "${arg_SOURCE_PATH}"
         -G "${generator}"
         ${architecture_options}
         "-DCMAKE_BUILD_TYPE=Debug"
@@ -248,7 +273,7 @@ function(vcpkg_cmake_configure)
 
         vcpkg_find_acquire_program(NINJA)
 
-        #parallelize the configure step
+        # parallelize the configure step
         set(ninja_configure_contents
             "rule CreateProcess\n  command = \$process\n\n"
         )
@@ -256,6 +281,7 @@ function(vcpkg_cmake_configure)
         if(NOT DEFINED VCPKG_BUILD_TYPE OR "${VCPKG_BUILD_TYPE}" STREQUAL "release")
             z_vcpkg_configure_cmake_build_cmakecache(ninja_configure_contents ".." "rel")
         endif()
+
         if(NOT DEFINED VCPKG_BUILD_TYPE OR "${VCPKG_BUILD_TYPE}" STREQUAL "debug")
             z_vcpkg_configure_cmake_build_cmakecache(ninja_configure_contents "../../${TARGET_TRIPLET}-dbg" "dbg")
         endif()
@@ -271,13 +297,13 @@ function(vcpkg_cmake_configure)
             WORKING_DIRECTORY "${build_dir_release}/vcpkg-parallel-configure"
             LOGNAME "${arg_LOGFILE_BASE}"
             SAVE_LOG_FILES
-                "../../${TARGET_TRIPLET}-dbg/CMakeCache.txt" ALIAS "dbg-CMakeCache.txt.log"
-                "../CMakeCache.txt" ALIAS "rel-CMakeCache.txt.log"
-                "../../${TARGET_TRIPLET}-dbg/CMakeFiles/CMakeConfigureLog.yaml" ALIAS "dbg-CMakeConfigureLog.yaml.log"
-                "../CMakeFiles/CMakeConfigureLog.yaml" ALIAS "rel-CMakeConfigureLog.yaml.log"
-                ${parallel_log_args}
+            "../../${TARGET_TRIPLET}-dbg/CMakeCache.txt" ALIAS "dbg-CMakeCache.txt.log"
+            "../CMakeCache.txt" ALIAS "rel-CMakeCache.txt.log"
+            "../../${TARGET_TRIPLET}-dbg/CMakeFiles/CMakeConfigureLog.yaml" ALIAS "dbg-CMakeConfigureLog.yaml.log"
+            "../CMakeFiles/CMakeConfigureLog.yaml" ALIAS "rel-CMakeConfigureLog.yaml.log"
+            ${parallel_log_args}
         )
-        
+
         vcpkg_list(APPEND config_logs
             "${CURRENT_BUILDTREES_DIR}/${arg_LOGFILE_BASE}-out.log"
             "${CURRENT_BUILDTREES_DIR}/${arg_LOGFILE_BASE}-err.log")
@@ -289,9 +315,9 @@ function(vcpkg_cmake_configure)
                 WORKING_DIRECTORY "${build_dir_debug}"
                 LOGNAME "${arg_LOGFILE_BASE}-dbg"
                 SAVE_LOG_FILES
-                  "CMakeCache.txt"
-                  "CMakeFiles/CMakeConfigureLog.yaml"
-                  ${log_args}
+                "CMakeCache.txt"
+                "CMakeFiles/CMakeConfigureLog.yaml"
+                ${log_args}
             )
             vcpkg_list(APPEND config_logs
                 "${CURRENT_BUILDTREES_DIR}/${arg_LOGFILE_BASE}-dbg-out.log"
@@ -305,29 +331,34 @@ function(vcpkg_cmake_configure)
                 WORKING_DIRECTORY "${build_dir_release}"
                 LOGNAME "${arg_LOGFILE_BASE}-rel"
                 SAVE_LOG_FILES
-                  "CMakeCache.txt"
-                  "CMakeFiles/CMakeConfigureLog.yaml"
-                  ${log_args}
+                "CMakeCache.txt"
+                "CMakeFiles/CMakeConfigureLog.yaml"
+                ${log_args}
             )
             vcpkg_list(APPEND config_logs
                 "${CURRENT_BUILDTREES_DIR}/${arg_LOGFILE_BASE}-rel-out.log"
                 "${CURRENT_BUILDTREES_DIR}/${arg_LOGFILE_BASE}-rel-err.log")
         endif()
     endif()
-    
+
     set(all_unused_variables)
+
     foreach(config_log IN LISTS config_logs)
         if(NOT EXISTS "${config_log}")
             continue()
         endif()
+
         file(READ "${config_log}" log_contents)
         debug_message("Reading configure log ${config_log}...")
+
         if(NOT log_contents MATCHES "Manually-specified variables were not used by the project:\n\n((    [^\n]*\n)*)")
             continue()
         endif()
+
         string(STRIP "${CMAKE_MATCH_1}" unused_variables) # remove leading `    ` and trailing `\n`
         string(REPLACE "\n    " ";" unused_variables "${unused_variables}")
         debug_message("unused variables: ${unused_variables}")
+
         foreach(unused_variable IN LISTS unused_variables)
             if(unused_variable IN_LIST manually_specified_variables)
                 debug_message("manually specified unused variable: ${unused_variable}")

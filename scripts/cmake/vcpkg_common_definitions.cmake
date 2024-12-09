@@ -1,6 +1,7 @@
 string(COMPARE NOTEQUAL "${TARGET_TRIPLET}" "${HOST_TRIPLET}" VCPKG_CROSSCOMPILING)
-#Helper variable to identify the Target system. VCPKG_TARGET_IS_<targetname>
-if (NOT DEFINED VCPKG_CMAKE_SYSTEM_NAME OR VCPKG_CMAKE_SYSTEM_NAME STREQUAL "")
+
+# Helper variable to identify the Target system. VCPKG_TARGET_IS_<targetname>
+if(NOT DEFINED VCPKG_CMAKE_SYSTEM_NAME OR VCPKG_CMAKE_SYSTEM_NAME STREQUAL "")
     set(VCPKG_TARGET_IS_WINDOWS ON)
 
     if(DEFINED VCPKG_XBOX_CONSOLE_TARGET AND NOT "${VCPKG_XBOX_CONSOLE_TARGET}" STREQUAL "")
@@ -28,10 +29,10 @@ elseif(VCPKG_CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     set(VCPKG_TARGET_IS_EMSCRIPTEN ON)
 endif()
 
-#Helper variables to identify the host system name
-if (CMAKE_HOST_WIN32)
+# Helper variables to identify the host system name
+if(CMAKE_HOST_WIN32)
     set(VCPKG_HOST_IS_WINDOWS ON)
-elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
     set(VCPKG_HOST_IS_OSX ON)
 elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
     set(VCPKG_HOST_IS_LINUX ON)
@@ -41,28 +42,28 @@ elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "OpenBSD")
     set(VCPKG_HOST_IS_OPENBSD ON)
 endif()
 
-#Helper variable to identify the host path separator.
+# Helper variable to identify the host path separator.
 if(CMAKE_HOST_WIN32)
     set(VCPKG_HOST_PATH_SEPARATOR ";")
 elseif(CMAKE_HOST_UNIX)
     set(VCPKG_HOST_PATH_SEPARATOR ":")
 endif()
 
-#Helper variables to identify executables on host/target
+# Helper variables to identify executables on host/target
 if(CMAKE_HOST_WIN32)
     set(VCPKG_HOST_EXECUTABLE_SUFFIX ".exe")
 else()
     set(VCPKG_HOST_EXECUTABLE_SUFFIX "")
 endif()
-#set(CMAKE_EXECUTABLE_SUFFIX ${VCPKG_HOST_EXECUTABLE_SUFFIX}) not required by find_program
 
+# set(CMAKE_EXECUTABLE_SUFFIX ${VCPKG_HOST_EXECUTABLE_SUFFIX}) not required by find_program
 if(VCPKG_TARGET_IS_WINDOWS)
     set(VCPKG_TARGET_EXECUTABLE_SUFFIX ".exe")
 else()
     set(VCPKG_TARGET_EXECUTABLE_SUFFIX "")
 endif()
 
-#Helper variables to identify bundles on host/target
+# Helper variables to identify bundles on host/target
 if(VCPKG_HOST_IS_OSX)
     set(VCPKG_HOST_BUNDLE_SUFFIX ".app")
 else()
@@ -75,7 +76,7 @@ else()
     set(VCPKG_TARGET_BUNDLE_SUFFIX "")
 endif()
 
-#Helper variables for libraries
+# Helper variables for libraries
 if(VCPKG_TARGET_IS_MINGW)
     set(VCPKG_TARGET_STATIC_LIBRARY_SUFFIX ".a")
     set(VCPKG_TARGET_IMPORT_LIBRARY_SUFFIX ".dll.a")
@@ -93,8 +94,8 @@ elseif(VCPKG_TARGET_IS_WINDOWS)
     set(VCPKG_TARGET_STATIC_LIBRARY_PREFIX "")
     set(VCPKG_TARGET_SHARED_LIBRARY_PREFIX "")
     set(VCPKG_TARGET_IMPORT_LIBRARY_PREFIX "")
-    set(VCPKG_FIND_LIBRARY_SUFFIXES ".lib" ".dll") #This is a slight modification to CMakes value which does not include ".dll".
-    set(VCPKG_FIND_LIBRARY_PREFIXES "" "lib") #This is a slight modification to CMakes value which does not include "lib".
+    set(VCPKG_FIND_LIBRARY_SUFFIXES ".lib" ".dll") # This is a slight modification to CMakes value which does not include ".dll".
+    set(VCPKG_FIND_LIBRARY_PREFIXES "" "lib") # This is a slight modification to CMakes value which does not include "lib".
 elseif(VCPKG_TARGET_IS_OSX)
     set(VCPKG_TARGET_STATIC_LIBRARY_SUFFIX ".a")
     set(VCPKG_TARGET_IMPORT_LIBRARY_SUFFIX "")
@@ -112,8 +113,9 @@ else()
     set(VCPKG_FIND_LIBRARY_SUFFIXES ".so" ".a")
     set(VCPKG_FIND_LIBRARY_PREFIXES "lib" "")
 endif()
-#Setting these variables allows find_library to work in script mode and thus in portfiles!
-#This allows us scale down on hardcoded target dependent paths in portfiles
+
+# Setting these variables allows find_library to work in script mode and thus in portfiles!
+# This allows us scale down on hardcoded target dependent paths in portfiles
 set(CMAKE_STATIC_LIBRARY_SUFFIX "${VCPKG_TARGET_STATIC_LIBRARY_SUFFIX}")
 set(CMAKE_SHARED_LIBRARY_SUFFIX "${VCPKG_TARGET_SHARED_LIBRARY_SUFFIX}")
 set(CMAKE_IMPORT_LIBRARY_SUFFIX "${VCPKG_TARGET_IMPORT_LIBRARY_SUFFIX}")
@@ -193,3 +195,5 @@ if(VCPKG_TARGET_IS_WINDOWS)
     list(APPEND VCPKG_SYSTEM_LIBRARIES wldap32)
     list(APPEND VCPKG_SYSTEM_LIBRARIES crypt32)
 endif()
+
+message(STATUS "VCPKG_SYSTEM_LIBRARIES: ${VCPKG_SYSTEM_LIBRARIES}")
